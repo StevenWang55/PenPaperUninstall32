@@ -17,6 +17,8 @@ PenPaperUninstall32Dlg.cpp : implementation file
 #define new DEBUG_NEW
 #endif
 
+// 2018.4.9, Device Class GUID for PenPaper Writing Service
+static GUID PenPaperPenWritingServiceGuidLong = { 0x0000ace0, 0x0000, 0x1000,{ 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb } };
 
 // CPenPaperUninstall32Dlg dialog
 
@@ -140,7 +142,12 @@ BOOL CPenPaperUninstall32Dlg::OnInitDialog()
 	//-----------------------------------------------------
 	// Get the DevInfo of all Bluetooth GATT Service device
 	//-----------------------------------------------------
-	hDevInfo = SetupDiGetClassDevs(&GUID_BLUETOOTH_GATT_SERVICE_DEVICE_INTERFACE, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+	//--------------------------------------------------------------------------------------------------------------------------
+	// 2018.4.9, For Windows 8.0, no GUID_BLUETOOTH_GATT_SERVICE_DEVICE_INTERFACE exist in the registry, so, we change to search
+	// the PenPaper Writing Service GUID directly.
+	//--------------------------------------------------------------------------------------------------------------------------
+	//hDevInfo = SetupDiGetClassDevs(&GUID_BLUETOOTH_GATT_SERVICE_DEVICE_INTERFACE, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+	hDevInfo = SetupDiGetClassDevs(&PenPaperPenWritingServiceGuidLong, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
 
 	if (hDevInfo == INVALID_HANDLE_VALUE)
 	{
@@ -159,7 +166,12 @@ BOOL CPenPaperUninstall32Dlg::OnInitDialog()
 		DeviceInterfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
 		InterfaceIndex = 0;
 
-		while (SetupDiEnumDeviceInterfaces(hDevInfo, &DevInfoData, &GUID_BLUETOOTH_GATT_SERVICE_DEVICE_INTERFACE, InterfaceIndex++, &DeviceInterfaceData))
+		//--------------------------------------------------------------------------------------------------------------------------
+		// 2018.4.9, For Windows 8.0, no GUID_BLUETOOTH_GATT_SERVICE_DEVICE_INTERFACE exist in the registry, so, we change to search
+		// the PenPaper Writing Service GUID directly.
+		//--------------------------------------------------------------------------------------------------------------------------
+		//while (SetupDiEnumDeviceInterfaces(hDevInfo, &DevInfoData, &GUID_BLUETOOTH_GATT_SERVICE_DEVICE_INTERFACE, InterfaceIndex++, &DeviceInterfaceData))
+		while (SetupDiEnumDeviceInterfaces(hDevInfo, &DevInfoData, &PenPaperPenWritingServiceGuidLong, InterfaceIndex++, &DeviceInterfaceData))
 		{
 			//--------------------------------------
 			// Get and allocate required buffer size 
@@ -306,7 +318,7 @@ BOOL CPenPaperUninstall32Dlg::OnInitDialog()
 	PathAppend(szDesktopFile, TEXT("PenPaper Control Panel User Guide.lnk"));
 	_wremove(szDesktopFile);
 
-	MessageBox(L"Finish to uninstall PenPaper HID minidriver", L"PenPaper.Uninhstall", MB_OK);
+	MessageBox(L"Finish to uninstall the PenPaper HID minidriver", L"PenPaper.Uninhstall", MB_OK);
 	EndDialog(IDCANCEL);
 	return 0;
 	//return TRUE;  // return TRUE  unless you set the focus to a control
