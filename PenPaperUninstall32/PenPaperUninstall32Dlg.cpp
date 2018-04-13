@@ -55,7 +55,7 @@ BOOL CPenPaperUninstall32Dlg::OnInitDialog()
 	//=================================================================
 	BOOL b_ItsWow64 = FALSE;
 
-	LPTSTR*	FilePart;
+	LPTSTR*	FilePart64;
 	WIN32_FIND_DATA	FindFileData;
 	HANDLE hX64Program;
 
@@ -78,7 +78,7 @@ BOOL CPenPaperUninstall32Dlg::OnInitDialog()
 	WCHAR *pwDriverProvider;
 	HRESULT hRes;
 
-	static WCHAR	szCurrentDir[MAX_PATH];
+	//static WCHAR	szCurrentDir[MAX_PATH];
 	static WCHAR	sz64BitSetupFile[MAX_PATH];
 
 	static WCHAR	szTargetFolder[MAX_PATH];
@@ -91,6 +91,10 @@ BOOL CPenPaperUninstall32Dlg::OnInitDialog()
 	static WCHAR	szStartMenuFolder[MAX_PATH];
 	static WCHAR	szStartMenuFile[MAX_PATH];
 
+	LPSTR*	FilePart;
+	static CHAR	szCurrentDir[MAX_PATH];
+	static CHAR szFinalCommand[MAX_PATH];
+
 	//=======================================
 	// Check if we are in 64-bit environment.
 	//=======================================
@@ -102,16 +106,18 @@ BOOL CPenPaperUninstall32Dlg::OnInitDialog()
 	/*--------------------------------*/
 	/* Get path of current directory. */
 	/*--------------------------------*/
-	FilePart = NULL;
-	SearchPath(NULL, L"PenPaperUninstall32.exe", L".exe", MAX_PATH, szCurrentDir, FilePart);
-	PathRemoveFileSpec(szCurrentDir);
+	FilePart64 = NULL;
+	//SearchPath(NULL, L"PenPaperUninstall32.exe", L".exe", MAX_PATH, szCurrentDir, FilePart64);
+	//PathRemoveFileSpec(szCurrentDir);
+	SearchPath(NULL, L"PenPaperUninstall32.exe", L".exe", MAX_PATH, sz64BitSetupFile, FilePart64);
+	PathRemoveFileSpec(sz64BitSetupFile);
 
 	if (b_ItsWow64)
 	{
 		/*-----------------------------------------------*/
 		/* Check 64-bit setup program file exist or not. */
 		/*-----------------------------------------------*/
-		wcscpy_s(sz64BitSetupFile, szCurrentDir);
+		//wcscpy_s(sz64BitSetupFile, szCurrentDir);
 		PathAppend(sz64BitSetupFile, TEXT("PenPaperUninstall64.exe"));
 		hX64Program = FindFirstFile(sz64BitSetupFile, &FindFileData);
 		if (hX64Program == INVALID_HANDLE_VALUE)
@@ -253,8 +259,8 @@ BOOL CPenPaperUninstall32Dlg::OnInitDialog()
 						continue;
 					}
 
-					csString.Format(L"Device Unistalled successful: %ws", pDeviceInterfaceDetailData->DevicePath);
-					MessageBox(csString, L"PenPaper.Uninhstall", MB_OK);
+					//csString.Format(L"Device Unistalled successful: %ws", pDeviceInterfaceDetailData->DevicePath);
+					//MessageBox(csString, L"PenPaper.Uninhstall", MB_OK);
 
 					//------------------------------------------------------
 					// Uninstall INF file and driver package in driver store
@@ -291,7 +297,8 @@ BOOL CPenPaperUninstall32Dlg::OnInitDialog()
 	PathAppend(szTargetUserGuideFile, TEXT("PenPaper Control Panel User Guide.pdf"));
 	_wremove(szTargetUserGuideFile);
 
-	_wrmdir(szTargetFolder);
+	// 2018.4.11, The folder will be remove in step 4
+	//_wrmdir(szTargetFolder);
 
 	//============================================================
 	// Step 3: Remove the Shortcut files on Desktop and Start Menu
@@ -318,7 +325,27 @@ BOOL CPenPaperUninstall32Dlg::OnInitDialog()
 	PathAppend(szDesktopFile, TEXT("PenPaper Control Panel User Guide.lnk"));
 	_wremove(szDesktopFile);
 
-	MessageBox(L"Finish to uninstall the PenPaper HID minidriver", L"PenPaper.Uninhstall", MB_OK);
+	wcscpy_s(szDesktopFile, szStartMenuFolder);
+	PathAppend(szDesktopFile, TEXT("Uninstall PenPaper.lnk"));
+	_wremove(szDesktopFile);
+
+	MessageBox(L"PenPaper HID minidriver uninstalled.", L"PenPaper.Uninhstall", MB_OK);
+
+	//-------------------------------------------------
+	// Step 4: Delete ourself (PenPaperUninstall32.exe)
+	//-------------------------------------------------
+	//---------------------------------
+	// Get full path of our executable.
+	//---------------------------------
+	FilePart = NULL;
+	SearchPathA(NULL, "PenPaperUninstall32.exe", NULL, MAX_PATH, szCurrentDir, FilePart);
+	PathRemoveFileSpecA(szCurrentDir);
+	PathStripPathA(szCurrentDir);	// "ACECAD"
+	//WinExec("cmd.exe /C choice /C Y /N /D Y /T 5 & Del PenPaperUninstall32.exe & cd.. & rd Test", SW_SHOWDEFAULT);
+	strcpy_s(szFinalCommand, "cmd.exe /C choice /C Y /N /D Y /T 6 & cd.. & rd /S /Q ");
+	strcat_s(szFinalCommand, szCurrentDir);
+	WinExec(szFinalCommand, SW_HIDE);
+
 	EndDialog(IDCANCEL);
 	return 0;
 	//return TRUE;  // return TRUE  unless you set the focus to a control
